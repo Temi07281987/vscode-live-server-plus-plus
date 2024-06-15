@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nihongo Quest - Learn Japanese</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            text-align: center;
+            padding: 20px;
+        }
+        .card, .sentence, .dialogue {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #fff;
+            transition: background-color 0.3s;
+        }
+        .card:hover, .sentence:hover, .dialogue:hover {
+            background-color: #e0e0e0;
+        }
+        #game-board, #dialogue-box {
+            margin-top: 50px;
+        }
+        .hidden {
+            display: none;
+        }
+        #xp-bar {
+            margin-top: 20px;
+            width: 80%;
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #xp-progress {
+            height: 20px;
+            background-color: #4caf50;
+            width: 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nihongo Quest - Learn Japanese</h1>
+    <div id="xp-bar">
+        <div id="xp-progress"></div>
+    </div>
+    <h2>Beginner Stage</h2>
+    <div id="game-board-beginner">
+        <div class="card" data-word="ねこ">Cat</div>
+        <div class="card" data-word="いぬ">Dog</div>
+        <div class="card" data-word="さかな">Fish</div>
+        <div class="card" data-word="とり">Bird</div>
+        <div class="card" data-word="うま">Horse</div>
+        <div class="card" data-word="ねずみ">Mouse</div>
+        <div class="card hidden" data-word="cat">ねこ</div>
+        <div class="card hidden" data-word="dog">いぬ</div>
+        <div class="card hidden" data-word="fish">さかな</div>
+        <div class="card hidden" data-word="bird">とり</div>
+        <div class="card hidden" data-word="horse">うま</div>
+        <div class="card hidden" data-word="mouse">ねずみ</div>
+    </div>
+    <h2>Intermediate Stage</h2>
+    <div id="game-board-intermediate">
+        <div class="sentence" data-sentence="I eat sushi.">すしをたべます。</div>
+        <div class="sentence" data-sentence="I drink water.">みずをのみます。</div>
+        <div class="sentence" data-sentence="I read a book.">ほんをよみます。</div>
+        <div class="sentence hidden" data-sentence="I eat sushi.">I eat sushi.</div>
+        <div class="sentence hidden" data-sentence="I drink water.">I drink water.</div>
+        <div class="sentence hidden" data-sentence="I read a book.">I read a book.</div>
+    </div>
+    <h2>Advanced Stage</h2>
+    <div id="dialogue-box">
+        <p id="npc-dialogue">こんにちは！お元気ですか？</p>
+        <div class="dialogue" data-response="I'm good, thank you.">元気です、ありがとう。</div>
+        <div class="dialogue" data-response="Not so well.">あまり元気ではありません。</div>
+        <div class="dialogue" data-response="I'm fine. How are you?">元気です。あなたはどうですか？</div>
+    </div>
+    <button id="save-progress">Save Progress</button>
+    <script>
+        let xp = 0;
+        const xpProgress = document.getElementById('xp-progress');
+
+        function updateXP(points) {
+            xp += points;
+            xpProgress.style.width = `${xp}%`;
+
+            if (xp >= 100) {
+                alert('Level Up! You have unlocked new content.');
+                xp = 0; // Reset XP after leveling up
+            }
+
+            saveProgress();
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            const progress = {
+                xp: xp,
+                beginnerCards: getHiddenElementsState(document.querySelectorAll('#game-board-beginner .card')),
+                intermediateSentences: getHiddenElementsState(document.querySelectorAll('#game-board-intermediate .sentence')),
+                dialogueResponse: document.getElementById('npc-dialogue').textContent
+            };
+            localStorage.setItem('nihongoQuestProgress', JSON.stringify(progress));
+        }
+
+        // Load progress from localStorage
+        function loadProgress() {
+            const progress = JSON.parse(localStorage.getItem('nihongoQuestProgress'));
+            if (progress) {
+                xp = progress.xp;
+                xpProgress.style.width = `${xp}%`;
+                setHiddenElementsState(document.querySelectorAll('#game-board-beginner .card'), progress.beginnerCards);
+                setHiddenElementsState(document.querySelectorAll('#game-board-intermediate .sentence'), progress.intermediateSentences);
+                document.getElementById('npc-dialogue').textContent = progress.dialogueResponse;
+            }
+        }
+
+        function getHiddenElementsState(elements) {
+            return Array.from(elements).map(el => el.classList.contains('hidden'));
+        }
+
+        function setHiddenElementsState(elements, state) {
+            elements.forEach((el, index) => {
+                if (state[index]) {
+                    el.classList.add('hidden');
+                } else {
+                    el.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Beginner Stage
+        const beginnerCards = document.querySelectorAll('#game-board-beginner .card');
+        let firstCard = null;
+        let secondCard = null;
+
+        beginnerCards.forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.remove('hidden');
+
+                if (!firstCard) {
+                    firstCard = card;
+                } else if (!secondCard) {
+                    secondCard = card;
+                    checkMatch(beginnerCards, 'card');
+                }
+            });
+        });
+
+        // Intermediate Stage
+        const intermediateSentences = document.querySelectorAll('#game-board-intermediate .sentence');
+        let firstSentence = null;
+        let secondSentence = null;
+
+        intermediateSentences.forEach(sentence => {
+            sentence.addEventListener('click', () => {
+                sentence.classList.remove('hidden');
+
+                if (!firstSentence) {
+                    firstSentence = sentence;
+                } else if (!secondSentence) {
+                    secondSentence = sentence;
+                    checkMatch(intermediateSentences, 'sentence');
+                }
+            });
+        });
+
+        // Advanced Stage
+        const dialogues = document.querySelectorAll('.dialogue');
+        const npcDialogue = document.getElementById('npc-dialogue');
+
+        dialogues.forEach(dialogue => {
+            dialogue.addEventListener('click', () => {
+                npcDialogue.textContent = dialogue.dataset.response;
+                updateXP(10); // Update XP for each correct dialogue
+                setTimeout(() => {
+                    nextDialogue();
+                }, 2000);
+            });
+        });
+
+        function checkMatch(elements, type) {
+            let firstElement, secondElement;
+            if (type === 'card') {
+                firstElement = firstCard;
+                secondElement = secondCard;
+            } else if (type === 'sentence') {
+                firstElement = firstSentence;
+                secondElement = secondSentence;
+            }
+
+            if (firstElement.dataset.word === secondElement.dataset.word || firstElement.dataset.sentence === secondElement.dataset.sentence) {
+                updateXP(10); // Update XP for each correct match
+                firstCard = null;
+                secondCard = null;
+                firstSentence = null;
+                secondSentence = null;
+            } else {
+                setTimeout(() => {
+                    firstElement.classList.add('hidden');
+                    secondElement.classList.add('hidden');
+                    firstCard = null;
+                    secondCard = null;
+                    firstSentence = null;
+                    secondSentence = null;
+                }, 1000);
+            }
+        }
+
+        function nextDialogue() {
+            const dialogues = [
+                "いい天気ですね。",
+                "今日、何をしましたか？",
+                "日本の食べ物は好きですか？"
+            ];
+            const randomDialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+            npcDialogue.textContent = randomDialogue;
+        }
+
+        document.getElementById('save-progress').addEventListener('click', saveProgress);
+
+        // Load progress on page load
+        window.addEventListener('load', loadProgress);
+    </script>
+</body>
+</html>
